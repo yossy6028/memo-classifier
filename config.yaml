@@ -1,0 +1,84 @@
+# Cursor Memo Classifier Configuration
+
+# API設定
+ai_provider: "anthropic"  # anthropic or openai
+api_key: ""  # 環境変数 ANTHROPIC_API_KEY から取得
+model: "claude-3-5-sonnet-20241022"
+
+# パス設定
+obsidian_vault_path: "/Users/yoshiikatsuhiko/Library/Mobile Documents/iCloud~md~obsidian/Documents"
+inbox_path: "02_Inbox"
+
+# 分類設定
+classification_threshold: 0.7
+auto_tag_limit: 8  # 固有名詞・重要単語用に増加
+relation_threshold: 0.6
+
+# タイトル生成設定
+title_max_length: 25
+title_min_length: 10
+title_confidence_threshold: 0.8
+
+# リレーション設定
+context_analysis_depth: "deep"  # shallow, medium, deep
+relation_confidence_threshold: 0.6  # 相互リレーション用に調整
+max_relations_per_memo: 10  # 相互リレーション用に増加
+enable_auto_relation_update: true  # 相互リンクの自動更新
+
+# フォルダマッピング
+category_folders:
+  education: "02_Inbox/education"
+  tech: "02_Inbox/tech"
+  business: "02_Inbox/business"
+  ideas: "02_Inbox/ideas"
+  general: "02_Inbox/general"
+  kindle: "02_Inbox/kindle"      # 既存
+  readwise: "02_Inbox/Readwise"  # 既存
+
+# 既存タグマッピング
+existing_tags:
+  education:
+    - "#EduShift"
+    - "#AI教育"
+    - "#教育DX"
+    - "#EdTech"
+    - "#塾DX"
+    - "#講師独立"
+    - "#中学受験"
+    - "#国語指導"
+    - "#生成AI活用"
+    - "#ChatGPT教育活用"
+  tech:
+    - "#Tech"
+    - "#articles"
+    - "#プログラミング"
+    - "#AI"
+    - "#MCP"
+    - "#API"
+  business:
+    - "#ビジネス"
+    - "#マーケティング"
+    - "#戦略"
+    - "#集客"
+    - "#経営"
+  ideas:
+    - "#アイデア"
+    - "#創作"
+    - "#企画"
+  general:
+    - "#日常"
+    - "#雑記"
+    - "#学習"
+
+# ログ設定
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/classifier.log"
+  max_size: "10MB"
+  backup_count: 5
+
+# パフォーマンス設定
+performance:
+  max_memory_mb: 100
+  timeout_seconds: 30
+  batch_size: 1  # 逐次処理 

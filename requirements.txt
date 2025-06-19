@@ -1,0 +1,29 @@
+# AI/ML Dependencies
+anthropic==0.18.1
+sentence-transformers==2.2.2
+torch>=1.9.0
+numpy
+
+# Natural Language Processing
+mecab-python3==1.0.6
+ipadic==1.0.0
+spacy>=3.0.0
+
+# Text Processing
+pyyaml==6.0.1
+python-dateutil==2.8.2
+
+# File Operations
+pathlib2==2.3.7
+
+# Network Analysis
+networkx>=2.8.0
+
+# Utilities
+tqdm==4.66.1
+colorama==0.4.6
+pickle-mixin==1.0.2
+
+# Development/Testing
+pytest==7.4.3
+pytest-cov==4.1.0 

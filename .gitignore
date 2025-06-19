@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+.venv/
+
+# Cache files
+*.pkl
+embeddings_cache.pkl
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Compiled AppleScript
+*.app/Contents/MacOS/applet
+*.app/Contents/Resources/applet.rsrc
+
+# Temporary files
+*.tmp
+*.temp
