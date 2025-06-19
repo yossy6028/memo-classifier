@@ -449,61 +449,308 @@ class IntegratedMemoProcessor:
         return ""
     
     def _comprehensive_tag_generation(self, content: str, category_result: dict) -> dict:
-        """包括的タグ生成"""
-        
-        tags = set()
-        tag_sources = {}
-        
-        # 1. カテゴリベースタグ
-        category_tags = self._get_category_base_tags(category_result['name'])
-        for tag in category_tags:
-            tags.add(tag)
-            tag_sources[tag] = 'category'
-        
-        # 2. コンテンツタイプタグ
-        content_type = self._detect_content_type(content)
-        type_tags = self._get_content_type_tags(content_type)
-        for tag in type_tags:
-            tags.add(tag)
-            tag_sources[tag] = 'content_type'
-        
-        # 3. 頻出語タグ
-        frequent_tags = self._extract_frequent_word_tags(content)
-        for tag in frequent_tags:
-            tags.add(tag)
-            tag_sources[tag] = 'frequent_words'
-        
-        # 4. 感情・トーンタグ
-        emotion_tags = self._extract_emotion_tags(content)
-        for tag in emotion_tags:
-            tags.add(tag)
-            tag_sources[tag] = 'emotion'
-        
-        # 5. アクションタグ
-        action_tags = self._extract_action_tags(content)
-        for tag in action_tags:
-            tags.add(tag)
-            tag_sources[tag] = 'action'
-        
-        # 6. 固有名詞タグ
-        entity_tags = self._extract_entity_tags(content)
-        for tag in entity_tags:
-            tags.add(tag)
-            tag_sources[tag] = 'entities'
-        
-        # タグの優先順位付けとクリーンアップ
-        prioritized_tags = self._prioritize_tags(list(tags), content, tag_sources)
-        
-        return {
-            'tags': prioritized_tags[:10],  # 上位10個
-            'count': len(prioritized_tags),
-            'sources': tag_sources,
-            'category_tags': category_tags,
-            'content_type': content_type
-        }
+        """file-organizer式6層タグ生成システム"""
+        try:
+            category = category_result['name']
+            tags = set()
+            
+            # Layer 1: 最優先 - 固有名詞・専門用語（重み: 3倍）
+            try:
+                priority_tags = self._extract_priority_entities(content, category)
+                for tag in priority_tags:
+                    tags.add(f"PRIORITY:{tag}")
+            except:
+                pass
+            
+            # Layer 2: カテゴリベースタグ（重み: 2倍）
+            try:
+                category_tags = self._get_category_base_tags(category)
+                for tag in category_tags:
+                    keywords = self._get_category_keywords(category, tag)
+                    if any(keyword in content for keyword in keywords):
+                        tags.add(f"CATEGORY:{tag}")
+            except:
+                pass
+            
+            # Layer 3: アクション・動作タグ
+            try:
+                action_tags = self._extract_action_tags_enhanced(content)
+                tags.update(action_tags)
+            except:
+                pass
+            
+            # Layer 4: 感情・トーンタグ
+            try:
+                emotion_tags = self._extract_emotion_tags_enhanced(content)
+                tags.update(emotion_tags)
+            except:
+                pass
+            
+            # Layer 5: コンテンツタイプタグ
+            try:
+                content_type_tags = self._extract_content_type_tags_enhanced(content)
+                tags.update(content_type_tags)
+            except:
+                pass
+            
+            # Layer 6: 頻出語タグ（2回以上出現）
+            try:
+                frequent_tags = self._extract_frequent_terms_enhanced(content)
+                tags.update(frequent_tags)
+            except:
+                pass
+            
+            # 優先度に基づいてタグをソート・選択
+            final_tags = self._prioritize_and_select_tags(tags, content)
+            
+            # 空の場合は従来方式にフォールバック
+            if not final_tags:
+                fallback_tags = self._extract_priority_terms(content, category)
+                final_tags = [f"#{tag}" for tag in fallback_tags]
+            
+            prioritized_tags = final_tags[:12]  # 最大12個
+            
+            return {
+                'tags': prioritized_tags,
+                'count': len(prioritized_tags),
+                'layer_info': '6-layer hierarchical system',
+                'method': 'file-organizer_enhanced'
+            }
+            
+        except Exception as e:
+            print(f"⚠️ タグ生成エラー、従来方式を使用: {e}")
+            # エラー時は従来の方式にフォールバック
+            fallback_tags = self._extract_priority_terms(content, category)
+            return {
+                'tags': [f"#{tag}" for tag in fallback_tags],
+                'count': len(fallback_tags),
+                'method': 'fallback'
+            }
     
+    def _extract_priority_entities(self, content: str, category: str) -> set:
+        """Layer 1: 最優先固有名詞・専門用語抽出"""
+        entities = set()
+        
+        if category == 'education':
+            # 学校名（最優先）
+            school_patterns = {
+                '開成': ['開成中学', '開成'],
+                '麻布': ['麻布中学', '麻布'],
+                '駒東': ['駒場東邦', '駒東'],
+                '桜蔭': ['桜蔭中学', '桜蔭'],
+                '女子学院': ['女子学院', 'JG'],
+                '雙葉': ['雙葉中学', '雙葉'],
+                '筑駒': ['筑波大駒場', '筑駒'],
+                '渋幕': ['渋谷幕張', '渋幕'],
+                '武蔵': ['武蔵中学', '武蔵'],
+                'SAPIX': ['サピックス', 'SAPIX', 'サピ']
+            }
+            for school, patterns in school_patterns.items():
+                if any(pattern in content for pattern in patterns):
+                    entities.add(school)
+                    
+        elif category == 'tech':
+            # 技術固有名詞（最優先）
+            tech_entities = {
+                'Claude': ['Claude', 'claude'],
+                'ChatGPT': ['ChatGPT', 'chatgpt', 'Chat GPT'],
+                'GitHub': ['GitHub', 'github', 'Github'],
+                'Python': ['Python', 'python'],
+                'JavaScript': ['JavaScript', 'javascript', 'JS'],
+                'Cursor': ['Cursor', 'cursor'],
+                'Obsidian': ['Obsidian', 'obsidian'],
+                'MCP': ['MCP', 'mcp'],
+                'Supabase': ['Supabase', 'supabase']
+            }
+            for entity, patterns in tech_entities.items():
+                if any(pattern in content for pattern in patterns):
+                    entities.add(entity)
+                    
+        elif category == 'media':
+            # メディア・SNS固有名詞（最優先）
+            media_entities = {
+                '西村創一朗': ['西村創一朗', '西村'],
+                '西川将史': ['西川将史', '西川'],
+                '梶谷健人': ['梶谷健人', '梶谷'],
+                'X分析': ['X分析', 'Ｘ分析'],
+                'SNS分析': ['SNS分析', 'ポスト分析', 'アカウント分析'],
+                'エンゲージメント': ['エンゲージメント', 'いいね', 'リポスト']
+            }
+            for entity, patterns in media_entities.items():
+                if any(pattern in content for pattern in patterns):
+                    entities.add(entity)
+        
+        # 一般的な重要固有名詞
+        general_entities = re.findall(r'\\b[A-Z][a-zA-Z]{3,15}\\b', content)
+        for entity in general_entities:
+            if len(entity) >= 4 and not re.match(r'^[A-Z]{3,4}$', entity):
+                entities.add(entity)
+        
+        return entities
+    
+    def _get_category_base_tags(self, category: str) -> list:
+        """Layer 2: カテゴリベースタグ定義"""
+        category_base_tags = {
+            'education': ['中学受験', '国語指導', '過去問分析', '入試対策', '読解指導', '表現指導'],
+            'tech': ['プログラミング', 'AI開発', 'システム構築', 'API連携', 'データ分析', 'プロンプトエンジニアリング'],
+            'media': ['SNS戦略', 'SNS運用', 'コンテンツ分析', 'インフルエンサー分析', 'エンゲージメント分析'],
+            'business': ['ビジネス戦略', 'マーケティング戦略', '売上分析', '顧客獲得', 'ブランディング'],
+            'ideas': ['アイデア創出', '企画立案', 'ブレインストーミング'],
+            'general': ['メモ', '記録', '整理']
+        }
+        return category_base_tags.get(category, [])
+    
+    def _get_category_keywords(self, category: str, tag: str) -> list:
+        """カテゴリ・タグ別キーワード取得"""
+        keyword_map = {
+            'education': {
+                '中学受験': ['中学受験', '受験', '入試', '合格'],
+                '国語指導': ['国語', '読解', '表現', '文章'],
+                '過去問分析': ['過去問', '出題傾向', '分析'],
+            },
+            'tech': {
+                'プログラミング': ['プログラミング', 'コード', '開発'],
+                'AI開発': ['AI', '機械学習', 'Claude', 'ChatGPT'],
+                'API連携': ['API', '連携', '接続'],
+            },
+            'media': {
+                'SNS戦略': ['SNS', '戦略', 'X', 'Twitter'],
+                'エンゲージメント分析': ['エンゲージメント', 'いいね', 'フォロワー'],
+            }
+        }
+        return keyword_map.get(category, {}).get(tag, [])
+    
+    def _extract_action_tags_enhanced(self, content: str) -> set:
+        """Layer 3: アクション・動作タグ抽出"""
+        actions = set()
+        action_patterns = {
+            '学習': ['学習', '勉強', '習得', '理解'],
+            '分析': ['分析', '解析', '調査', '検証'],
+            '記録': ['記録', 'メモ', '保存', '整理'],
+            '計画': ['計画', '戦略', '設計', '企画'],
+            '実行': ['実行', '実施', '実装', '開発'],
+            '評価': ['評価', '検討', '判断', '確認']
+        }
+        
+        for action, keywords in action_patterns.items():
+            if any(keyword in content for keyword in keywords):
+                actions.add(action)
+        
+        return actions
+    
+    def _extract_emotion_tags_enhanced(self, content: str) -> set:
+        """Layer 4: 感情・トーンタグ抽出"""
+        emotions = set()
+        emotion_patterns = {
+            '重要': ['重要', '大切', '必須', '!', '！'],
+            '疑問': ['？', '?', 'どう', 'なぜ', 'どのように'],
+            'ポジティブ': ['素晴らしい', '良い', '成功', '改善'],
+            '課題': ['課題', '問題', '改善', '対策'],
+            '発見': ['発見', '気づき', '学び', 'ひらめき']
+        }
+        
+        for emotion, keywords in emotion_patterns.items():
+            if any(keyword in content for keyword in keywords):
+                emotions.add(emotion)
+        
+        return emotions
+    
+    def _extract_content_type_tags_enhanced(self, content: str) -> set:
+        """Layer 5: コンテンツタイプタグ抽出"""
+        content_types = set()
+        type_patterns = {
+            'アイデア': ['アイデア', '案', '提案', '思いつき'],
+            'レポート': ['結果', '報告', 'レポート', 'まとめ'],
+            'メモ': ['メモ', '覚書', '備忘録'],
+            'ツール': ['ツール', '道具', 'アプリ', 'サービス'],
+            'プロセス': ['手順', 'ステップ', 'プロセス', '方法']
+        }
+        
+        for content_type, keywords in type_patterns.items():
+            if any(keyword in content for keyword in keywords):
+                content_types.add(content_type)
+        
+        return content_types
+    
+    def _extract_frequent_terms_enhanced(self, content: str) -> set:
+        """Layer 6: 頻出語タグ抽出（2回以上出現）"""
+        frequent_terms = set()
+        
+        # 日本語の意味のある語（3文字以上）
+        japanese_words = re.findall(r'[ぁ-んァ-ヶー一-龯]{3,8}', content)
+        word_counts = Counter(japanese_words)
+        
+        for word, count in word_counts.items():
+            if (count >= 2 and len(word) >= 3 and 
+                not re.match(r'^[あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん]+$', word)):
+                frequent_terms.add(word)
+        
+        return frequent_terms
+    
+    def _prioritize_and_select_tags(self, tags: set, content: str) -> list:
+        """優先度に基づいてタグをソート・選択"""
+        prioritized_tags = []
+        
+        # 優先度順でタグを処理
+        priority_order = ['PRIORITY:', 'CATEGORY:', '']
+        
+        for prefix in priority_order:
+            matching_tags = [tag for tag in tags if tag.startswith(prefix)]
+            
+            # プレフィックスを除去してクリーンなタグに
+            clean_tags = []
+            for tag in matching_tags:
+                clean_tag = tag.replace('PRIORITY:', '').replace('CATEGORY:', '')
+                if len(clean_tag) >= 2:
+                    clean_tags.append(f"#{clean_tag}")
+            
+            prioritized_tags.extend(clean_tags)
+        
+        # 重複除去して順序保持
+        seen = set()
+        final_tags = []
+        for tag in prioritized_tags:
+            if tag not in seen:
+                seen.add(tag)
+                final_tags.append(tag)
+        
+        return final_tags
+    
+    def _extract_priority_terms(self, content: str, category: str) -> set:
+        """カテゴリ別の最優先固有名詞抽出（フォールバック用）"""
+        tags = set()
+        
+        if category == 'education':
+            # 学校名を最優先で抽出
+            school_names = ['開成', '麻布', '駒東', '桜蔭', '女子学院', '雙葉', '筑駒', '渋幕', '渋渋', '武蔵', '海城']
+            for school in school_names:
+                if school in content:
+                    tags.add(school)
+            
+            # 重要な教育用語
+            key_terms = ['中学受験', '国語', '過去問', '入試', '分析', '傾向', '対策', 'SAPIX', 'サピックス', '四谷大塚', '日能研']
+            for term in key_terms:
+                if term in content:
+                    tags.add(term)
+                    
+        elif category == 'tech':
+            # 重要な技術用語
+            key_tech = ['GitHub', 'Git', 'Python', 'JavaScript', 'API', 'ChatGPT', 'Claude', 'AI', 'システム', 'アプリ', 'プログラミング', '開発', 'トークン', '認証']
+            for term in key_tech:
+                if term in content or term.lower() in content.lower():
+                    tags.add(term)
+                    
+        elif category == 'media':
+            # 重要なメディア・SNS用語
+            key_media = ['X', 'Twitter', 'SNS', 'アカウント', 'ポスト', 'フォロワー', 'インフルエンサー', '分析', '西村創一朗', '西川将史', '梶谷健人', 'エンゲージメント']
+            for term in key_media:
+                if term in content:
+                    tags.add(term)
+        
+        return tags
+
     def _find_related_files(self, content: str, title: str) -> dict:
-        """関連ファイル検索"""
+        """file-organizer式強化関連ファイル検索"""
         
         try:
             vault_path = Path(self.obsidian_path)
@@ -518,15 +765,27 @@ class IntegratedMemoProcessor:
                     with open(md_file, 'r', encoding='utf-8') as f:
                         file_content = f.read()
                     
-                    # 関連度を計算
-                    relation_score = self._calculate_relation_score(content, file_content)
+                    # タイトルを抽出
+                    file_title = md_file.stem
                     
-                    if relation_score > 0.1:  # 閾値を下げて関連ファイルを見つけやすくする
+                    # 関連度を計算（階層的アプローチ）
+                    relation_score = self._calculate_hierarchical_relation_score(
+                        content, file_content, title, file_title
+                    )
+                    
+                    # カテゴリ別の厳格な閾値設定（関連度向上）
+                    threshold = self._get_relation_threshold(title, file_title)
+                    
+                    if relation_score > threshold:
+                        # 星評価を計算
+                        star_rating = self._calculate_star_rating(relation_score)
+                        
                         relations.append({
                             'file_path': str(md_file),
-                            'file_name': md_file.stem,
+                            'file_name': file_title,
                             'score': relation_score,
-                            'relation_type': self._determine_relation_type(content, file_content),
+                            'star_rating': star_rating,
+                            'relation_type': self._determine_relation_type_enhanced(content, file_content),
                             'preview': file_content[:100] + "..." if len(file_content) > 100 else file_content
                         })
                 
@@ -537,7 +796,7 @@ class IntegratedMemoProcessor:
             relations.sort(key=lambda x: x['score'], reverse=True)
             
             return {
-                'relations': relations[:5],  # 上位5件
+                'relations': relations[:3],  # 上位3件（精度向上）
                 'count': len(relations),
                 'total_files_checked': len(md_files)
             }
@@ -549,28 +808,114 @@ class IntegratedMemoProcessor:
                 'error': str(e)
             }
     
-    def _calculate_relation_score(self, content1: str, content2: str) -> float:
-        """関連度スコア計算"""
+    def _calculate_hierarchical_relation_score(self, content1: str, content2: str, title1: str, title2: str) -> float:
+        """file-organizer式階層的関連度スコア計算"""
+        max_score = 0.0
         
-        # 簡易的なキーワードベース類似度
-        words1 = set(re.findall(r'[ぁ-んァ-ヶー一-龯]{2,}', content1.lower()))
-        words2 = set(re.findall(r'[ぁ-んァ-ヶー一-龯]{2,}', content2.lower()))
+        # 1. タイトル類似度（最重要）
+        title_similarity = self._calculate_title_similarity(title1, title2)
+        if title_similarity > 0.3:  # タイトル類似度閾値
+            max_score = max(max_score, title_similarity * 1.5)  # 重み付け
         
-        # 一般的すぎる語を除外
-        common_words = {'です', 'ます', 'ある', 'いる', 'する', 'なる', 'この', 'その', 'あの'}
+        # 2. タグ類似度
+        tags1 = self._extract_simple_tags(content1)
+        tags2 = self._extract_simple_tags(content2)
+        tag_similarity = self._calculate_jaccard_similarity(tags1, tags2)
+        if tag_similarity > 0.2:
+            max_score = max(max_score, tag_similarity * 1.2)
+        
+        # 3. コンテンツ類似度
+        jaccard_similarity = self._calculate_content_jaccard_similarity(content1, content2)
+        
+        # カテゴリ別の厳格な閾値設定（関連度向上）
+        if self._is_sns_analysis_file(title1) and self._is_sns_analysis_file(title2):
+            if jaccard_similarity > 0.15:  # SNS分析同士：より厳格
+                max_score = max(max_score, jaccard_similarity)
+        elif self._is_tech_file(title1) and self._is_tech_file(title2):
+            if jaccard_similarity > 0.12:  # Tech系同士：より厳格  
+                max_score = max(max_score, jaccard_similarity)
+        else:
+            if jaccard_similarity > 0.18:  # 一般ファイル：より厳格
+                max_score = max(max_score, jaccard_similarity)
+        
+        return max_score
+    
+    def _calculate_title_similarity(self, title1: str, title2: str) -> float:
+        """タイトル類似度計算"""
+        words1 = set(re.findall(r'[ぁ-んァ-ヶー一-龯A-Za-z]{2,}', title1.lower()))
+        words2 = set(re.findall(r'[ぁ-んァ-ヶー一-龯A-Za-z]{2,}', title2.lower()))
+        
+        # 一般語除外
+        common_words = {'について', 'に関して', 'の方法', 'について', 'まとめ', 'メモ'}
         words1 = words1 - common_words
         words2 = words2 - common_words
         
         if not words1 or not words2:
             return 0.0
         
-        # Jaccard係数
         intersection = len(words1 & words2)
         union = len(words1 | words2)
-        
         return intersection / union if union > 0 else 0.0
     
-    def _determine_relation_type(self, content1: str, content2: str) -> str:
+    def _extract_simple_tags(self, content: str) -> set:
+        """簡易タグ抽出"""
+        words = re.findall(r'[ぁ-んァ-ヶー一-龯]{3,8}', content)
+        word_counts = Counter(words)
+        return {word for word, count in word_counts.items() if count >= 2}
+    
+    def _calculate_jaccard_similarity(self, set1: set, set2: set) -> float:
+        """Jaccard係数計算"""
+        if not set1 or not set2:
+            return 0.0
+        intersection = len(set1 & set2)
+        union = len(set1 | set2)
+        return intersection / union if union > 0 else 0.0
+    
+    def _calculate_content_jaccard_similarity(self, content1: str, content2: str) -> float:
+        """コンテンツのJaccard類似度計算"""
+        words1 = set(re.findall(r'[ぁ-んァ-ヶー一-龯]{3,}', content1.lower()))
+        words2 = set(re.findall(r'[ぁ-んァ-ヶー一-龯]{3,}', content2.lower()))
+        
+        # 一般的すぎる語を除外
+        common_words = {'について', 'に関して', 'ができる', 'である', 'ている', 'ました', 'します', 'された'}
+        words1 = words1 - common_words
+        words2 = words2 - common_words
+        
+        return self._calculate_jaccard_similarity(words1, words2)
+    
+    def _is_sns_analysis_file(self, title: str) -> bool:
+        """SNS分析ファイル判定"""
+        sns_keywords = ['X投稿', 'SNS', 'アカウント分析', 'ポスト分析', 'フォロワー', 'インフルエンサー']
+        return any(keyword in title for keyword in sns_keywords)
+    
+    def _is_tech_file(self, title: str) -> bool:
+        """技術ファイル判定"""
+        tech_keywords = ['API', 'プログラミング', 'システム', 'GitHub', 'Python', 'AI', 'Claude', 'コード']
+        return any(keyword in title for keyword in tech_keywords)
+    
+    def _get_relation_threshold(self, title1: str, title2: str) -> float:
+        """カテゴリ別関連閾値取得"""
+        if self._is_sns_analysis_file(title1) and self._is_sns_analysis_file(title2):
+            return 0.15  # SNS分析同士：厳格
+        elif self._is_tech_file(title1) and self._is_tech_file(title2):
+            return 0.12  # Tech系同士：厳格
+        else:
+            return 0.18  # 一般：より厳格
+    
+    def _calculate_star_rating(self, score: float) -> str:
+        """スコアから星評価を計算"""
+        if score >= 0.7:
+            return "★★★★★"
+        elif score >= 0.5:
+            return "★★★★"
+        elif score >= 0.3:
+            return "★★★"
+        elif score >= 0.2:
+            return "★★"
+        else:
+            return "★"
+    
+    def _determine_relation_type_enhanced(self, content1: str, content2: str) -> str:
         """関連タイプを判定"""
         
         # 簡易的な関連タイプ判定
@@ -766,6 +1111,10 @@ class IntegratedMemoProcessor:
                 analysis['relations']['relations']
             )
             
+            # Obsidian [[]] リンクを追加
+            if analysis['relations']['relations']:
+                self._add_obsidian_links(str(file_path), analysis['relations']['relations'])
+            
             return {
                 'success': True,
                 'file_path': str(file_path),
@@ -842,6 +1191,114 @@ class IntegratedMemoProcessor:
         lines.append(content)
         
         return '\n'.join(lines)
+    
+    def _add_obsidian_links(self, target_file_path: str, related_files: list):
+        """Obsidianファイルに相互リンクを追加"""
+        try:
+            target_path = Path(target_file_path)
+            
+            if not target_path.exists():
+                return
+            
+            # 既存の内容を読み込み
+            with open(target_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # 関連ファイルセクションを追加/更新
+            updated_content = self._add_new_links_section(content, related_files)
+            
+            # ファイルに書き戻し
+            with open(target_path, 'w', encoding='utf-8') as f:
+                f.write(updated_content)
+            
+            print(f"📎 {target_path.name}に関連リンクを追加")
+            
+            # 関連ファイル側にも逆リンクを追加
+            self._add_reverse_links(target_path, related_files)
+            
+        except Exception as e:
+            print(f"⚠️ リンク追加エラー: {e}")
+    
+    def _add_new_links_section(self, content: str, related_files: list) -> str:
+        """新しい関連ファイルセクションを追加"""
+        
+        # 既存の関連ファイルセクションを削除
+        content = re.sub(r'\n\n## 関連ファイル\n\n.*?(?=\n\n##|\n\n---|$)', '', content, flags=re.DOTALL)
+        content = re.sub(r'\n\n## 関連ファイル\n\n.*?$', '', content, flags=re.DOTALL)
+        
+        if not related_files:
+            return content
+        
+        # 新しい関連ファイルセクションを構築
+        links_section = "\n\n## 関連ファイル\n\n"
+        
+        for rel_file in related_files:
+            file_name = rel_file['file_name']
+            star_rating = rel_file.get('star_rating', '★★★')
+            
+            # 関連タイプに基づいてコメントを追加
+            relation_type = rel_file.get('relation_type', 'general')
+            if relation_type == 'educational':
+                comment = '(教育関連)'
+            elif relation_type == 'technical':
+                comment = '(技術関連)'
+            elif relation_type == 'business':
+                comment = '(ビジネス関連)'
+            elif relation_type == 'media':
+                comment = '(メディア関連)'
+            else:
+                comment = '(相互リンク)'
+            
+            links_section += f"- [[{file_name}]] {star_rating} {comment}\n"
+        
+        return content + links_section
+    
+    def _add_reverse_links(self, source_file: Path, related_files: list):
+        """関連ファイル側に逆リンクを追加"""
+        source_name = source_file.stem
+        
+        for rel_file in related_files:
+            try:
+                rel_file_path = Path(rel_file['file_path'])
+                
+                if not rel_file_path.exists():
+                    continue
+                
+                # 関連ファイルの内容を読み込み
+                with open(rel_file_path, 'r', encoding='utf-8') as f:
+                    rel_content = f.read()
+                
+                # 既に相互リンクがあるかチェック
+                if f"[[{source_name}]]" in rel_content:
+                    continue
+                
+                # 関連ファイルセクションがあるかチェック
+                if "## 関連ファイル" in rel_content:
+                    # 既存のセクションに追加
+                    star_rating = rel_file.get('star_rating', '★★★')
+                    new_link = f"- [[{source_name}]] {star_rating} (相互リンク)\n"
+                    
+                    # 関連ファイルセクションの最後に追加
+                    rel_content = re.sub(
+                        r'(## 関連ファイル\n\n(?:.*\n)*)',
+                        r'\1' + new_link,
+                        rel_content
+                    )
+                else:
+                    # 新しいセクションを作成
+                    star_rating = rel_file.get('star_rating', '★★★')
+                    new_section = f"\n\n## 関連ファイル\n\n- [[{source_name}]] {star_rating} (相互リンク)\n"
+                    rel_content += new_section
+                
+                # ファイルに書き戻し
+                with open(rel_file_path, 'w', encoding='utf-8') as f:
+                    f.write(rel_content)
+                
+                print(f"📎 {rel_file_path.name}に逆リンクを追加")
+                
+            except Exception as e:
+                print(f"⚠️ 逆リンク追加エラー ({rel_file['file_name']}): {e}")
+                continue
 
 
 def main():
