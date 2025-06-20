@@ -18,15 +18,18 @@ on run
         set analysisResult to my getAnalysis(memoContent)
         set memoTitle to my getValue(analysisResult, "TITLE")
         set memoCategory to my getValue(analysisResult, "CATEGORY")
+        set memoFolder to my getValue(analysisResult, "FOLDER")
         set memoTags to my getValue(analysisResult, "TAGS")
         set memoRelations to my getValue(analysisResult, "RELATIONS")
+        set memoSummary to my getValue(analysisResult, "SUMMARY")
+        set memoBulletPoints to my getValue(analysisResult, "BULLET_POINTS")
         
         -- Add date to title
         set currentDate to my getDateString()
         set memoTitle to memoTitle & " " & currentDate
         
         -- Build preview
-        set previewText to my buildPreview(memoTitle, memoCategory, memoContent, memoTags, memoRelations)
+        set previewText to my buildPreview(memoTitle, memoCategory, memoFolder, memoContent, memoTags, memoRelations, memoSummary, memoBulletPoints)
         
         -- Show confirmation
         set userChoice to button returned of (display dialog "📝 メモプレビュー" & return & return & previewText buttons {"キャンセル", "編集", "Obsidianに送信"} default button "Obsidianに送信")
@@ -127,6 +130,8 @@ on getValue(resultText, keyName)
             return "メモ"
         else if keyName = "CATEGORY" then
             return "general"
+        else if keyName = "FOLDER" then
+            return "Others"
         else if keyName = "TAGS" then
             return "タグなし"
         else if keyName = "RELATIONS" then
@@ -140,12 +145,15 @@ on getValue(resultText, keyName)
     end try
 end getValue
 
-on buildPreview(title, category, content, tags, relations)
+on buildPreview(title, category, folder, content, tags, relations, summary, bulletPoints)
     set previewLines to {}
+    
+    -- カテゴリの日本語表示名を取得
+    set categoryDisplay to my getCategoryDisplayName(category)
     
     set end of previewLines to "📋 タイトル: " & title
     set end of previewLines to ""
-    set end of previewLines to "📂 カテゴリ: " & category
+    set end of previewLines to "📂 カテゴリ: " & categoryDisplay
     set end of previewLines to ""
     set end of previewLines to "🏷️ タグ: " & tags
     set end of previewLines to ""
@@ -154,7 +162,30 @@ on buildPreview(title, category, content, tags, relations)
     set end of previewLines to "📄 内容:"
     set end of previewLines to content
     set end of previewLines to ""
-    set end of previewLines to "💾 保存先: " & category & "/" & title & ".md"
+    set end of previewLines to "📝 要約:"
+    if summary ≠ "" and summary ≠ "なし" then
+        -- 改行を含む要約をそのまま表示（改行は自動処理）
+        set end of previewLines to summary
+    else
+        set end of previewLines to "（要約なし）"
+    end if
+    set end of previewLines to ""
+    
+    -- 箇条書きポイントを追加
+    if bulletPoints ≠ "" and bulletPoints ≠ "なし" then
+        set end of previewLines to "📌 ポイント:"
+        -- パイプ区切りの箇条書きを分解
+        set AppleScript's text item delimiters to " | "
+        set bulletList to text items of bulletPoints
+        set AppleScript's text item delimiters to ""
+        
+        repeat with bulletItem in bulletList
+            set end of previewLines to "  • " & bulletItem
+        end repeat
+        set end of previewLines to ""
+    end if
+    
+    set end of previewLines to "💾 保存先: " & folder & "/" & title & ".md"
     set end of previewLines to ""
     set end of previewLines to "🤔 このメモを保存しますか？"
     
@@ -208,3 +239,26 @@ on trimText(inputText)
     
     return trimmedText
 end trimText
+
+on getCategoryDisplayName(category)
+    -- カテゴリの英語名を日本語表示名に変換
+    if category = "business" then
+        return "ビジネス/コンサルティング"
+    else if category = "tech" then
+        return "技術/開発"
+    else if category = "education" then
+        return "教育/学習"
+    else if category = "music" then
+        return "音楽/音楽理論"
+    else if category = "media" then
+        return "メディア/コンテンツ"
+    else if category = "ideas" then
+        return "アイデア/発想"
+    else if category = "general" then
+        return "一般/その他"
+    else if category = "kindle" then
+        return "Kindle/読書"
+    else
+        return category
+    end if
+end getCategoryDisplayName

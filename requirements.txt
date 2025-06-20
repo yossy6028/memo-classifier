@@ -1,29 +1,27 @@
-# AI/ML Dependencies
-anthropic==0.18.1
+# Phase 4拡張: 高度リレーション分析
+# 基本依存関係
+anthropic==0.8.1
 sentence-transformers==2.2.2
-torch>=1.9.0
-numpy
-
-# Natural Language Processing
-mecab-python3==1.0.6
-ipadic==1.0.0
-spacy>=3.0.0
-
-# Text Processing
 pyyaml==6.0.1
+colorama==0.4.6
+pathlib==1.0.1
+
+# Phase 4拡張: ネットワーク分析・グラフ理論
+networkx==3.2.1
+scikit-learn==1.3.2
+numpy==1.24.3
+pandas==2.1.4
+
+# 可視化（オプション）
+matplotlib==3.8.2
+plotly==5.17.0
+
+# テキスト分析拡張
+textblob==0.17.1
+wordcloud==1.9.2
+
+# 時系列分析
 python-dateutil==2.8.2
 
-# File Operations
-pathlib2==2.3.7
-
-# Network Analysis
-networkx>=2.8.0
-
-# Utilities
-tqdm==4.66.1
-colorama==0.4.6
-pickle-mixin==1.0.2
-
-# Development/Testing
-pytest==7.4.3
-pytest-cov==4.1.0 
+# JSON処理
+ujson==5.8.0 

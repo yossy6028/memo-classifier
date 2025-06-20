@@ -1,84 +1,109 @@
-# Cursor Memo Classifier Configuration
+# Cursor Memo Classifier - Phase 4拡張設定
+# 高度リレーション分析システム
 
-# API設定
-ai_provider: "anthropic"  # anthropic or openai
-api_key: ""  # 環境変数 ANTHROPIC_API_KEY から取得
+# 基本設定
+ai_provider: "anthropic"
 model: "claude-3-5-sonnet-20241022"
-
-# パス設定
 obsidian_vault_path: "/Users/yoshiikatsuhiko/Library/Mobile Documents/iCloud~md~obsidian/Documents"
 inbox_path: "02_Inbox"
 
-# 分類設定
-classification_threshold: 0.7
-auto_tag_limit: 8  # 固有名詞・重要単語用に増加
-relation_threshold: 0.6
-
-# タイトル生成設定
-title_max_length: 25
-title_min_length: 10
-title_confidence_threshold: 0.8
-
-# リレーション設定
-context_analysis_depth: "deep"  # shallow, medium, deep
-relation_confidence_threshold: 0.6  # 相互リレーション用に調整
-max_relations_per_memo: 10  # 相互リレーション用に増加
-enable_auto_relation_update: true  # 相互リンクの自動更新
-
-# フォルダマッピング
+# フォルダ構造
 category_folders:
   education: "02_Inbox/education"
   tech: "02_Inbox/tech"
   business: "02_Inbox/business"
   ideas: "02_Inbox/ideas"
   general: "02_Inbox/general"
-  kindle: "02_Inbox/kindle"      # 既存
-  readwise: "02_Inbox/Readwise"  # 既存
+  kindle: "02_Inbox/kindle"
+  readwise: "02_Inbox/Readwise"
+
+# タイトル生成設定
+title_generation:
+  max_length: 25
+  date_format: "%m%d"
+  confidence_threshold: 0.8
+
+# タグ管理設定
+tag_management:
+  auto_tag_limit: 5
+  enable_hierarchical_tags: true
 
 # 既存タグマッピング
 existing_tags:
-  education:
-    - "#EduShift"
-    - "#AI教育"
-    - "#教育DX"
-    - "#EdTech"
-    - "#塾DX"
-    - "#講師独立"
-    - "#中学受験"
-    - "#国語指導"
-    - "#生成AI活用"
-    - "#ChatGPT教育活用"
-  tech:
-    - "#Tech"
-    - "#articles"
-    - "#プログラミング"
-    - "#AI"
-    - "#MCP"
-    - "#API"
-  business:
-    - "#ビジネス"
-    - "#マーケティング"
-    - "#戦略"
-    - "#集客"
-    - "#経営"
-  ideas:
-    - "#アイデア"
-    - "#創作"
-    - "#企画"
-  general:
-    - "#日常"
-    - "#雑記"
-    - "#学習"
+  education: ["#教育", "#学習", "#指導", "#受験", "#国語指導", "#AI教育", "#EduShift", "#EdTech"]
+  tech: ["#Tech", "#技術", "#プログラミング", "#開発", "#API", "#システム", "#ツール"]
+  business: ["#ビジネス", "#戦略", "#マーケティング", "#営業", "#起業", "#集客"]
+  ideas: ["#アイデア", "#企画", "#創作", "#プロジェクト", "#創造"]
+  general: ["#日常", "#メモ", "#雑記"]
+
+# 文脈分析設定
+context_analysis:
+  embedding_model: "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+  analysis_depth: "deep"
+  similarity_threshold: 0.5
+
+# リレーション分析設定
+relation_analysis:
+  confidence_threshold: 0.5
+  max_relations: 5
+  enable_bidirectional: true
+
+# Phase 4拡張: 高度リレーション分析
+advanced_relation_analysis:
+  # ネットワーク分析
+  network_analysis:
+    enable: true
+    centrality_measures: ["degree", "betweenness", "closeness", "eigenvector"]
+    community_detection: "louvain"
+    min_community_size: 3
+    
+  # 時系列関連性
+  temporal_analysis:
+    enable: true
+    time_window_days: 30
+    decay_factor: 0.9
+    track_evolution: true
+    
+  # トピッククラスタリング
+  topic_clustering:
+    enable: true
+    n_clusters: 10
+    algorithm: "kmeans"
+    min_cluster_size: 5
+    cluster_threshold: 0.7
+    
+  # セマンティック検索
+  semantic_search:
+    enable: true
+    top_k: 10
+    cross_encoder_model: "cross-encoder/ms-marco-MiniLM-L-12-v2"
+    rerank_threshold: 0.8
+    
+  # 関連性学習
+  relation_learning:
+    enable: true
+    feedback_weight: 1.5
+    learning_rate: 0.1
+    memory_size: 1000
+    
+  # 可視化設定
+  visualization:
+    enable: true
+    graph_layout: "spring"
+    node_size_metric: "degree"
+    edge_weight_metric: "similarity"
+    export_format: ["json", "graphml"]
+
+# Obsidian連携
+obsidian_integration:
+  metadata_format: "enhanced"
+  enable_hierarchical_tags: true
+  auto_link_generation: true
+  backup_before_save: false
 
 # ログ設定
 logging:
-  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  level: "INFO"
   file: "logs/classifier.log"
   max_size: "10MB"
-  backup_count: 5
-
-# パフォーマンス設定
-performance:
-  max_memory_mb: 100
-  timeout_seconds: 30
-  batch_size: 1  # 逐次処理 
+  backup_count: 5 

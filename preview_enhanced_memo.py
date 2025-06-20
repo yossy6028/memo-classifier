@@ -21,19 +21,72 @@ class IntegratedMemoProcessor:
         self.obsidian_path = "/Users/yoshiikatsuhiko/Library/Mobile Documents/iCloud~md~obsidian/Documents"
         self.inbox_path = "02_Inbox"
         
-        # カテゴリマッピング
+        # 音声入力用カタカナ→英語変換辞書
+        self.katakana_to_english = {
+            # 技術系
+            'チャットGPT': 'ChatGPT',
+            'チャットジーピーティー': 'ChatGPT',
+            'ちゃっとGPT': 'ChatGPT',
+            'オブシディアン': 'Obsidian',
+            'カーソル': 'Cursor',
+            'パイソン': 'Python',
+            'ジャバスクリプト': 'JavaScript',
+            'ギットハブ': 'GitHub',
+            'ギット': 'Git',
+            'エーアイ': 'AI',
+            'エーピーアイ': 'API',
+            # ビジネス系
+            'クライアント': 'Client',
+            'プロジェクト': 'Project',
+            'コンサル': 'Consulting',
+            'コンサルティング': 'Consulting',
+            'アプローチ': 'Approach',
+            'マーケティング': 'Marketing',
+            'ミーティング': 'Meeting',
+            'アドバンスド': 'Advanced',
+            'ボイスモード': 'Voice Mode',
+            # SNS系
+            'ツイッター': 'Twitter',
+            'エックス': 'X',
+            'フェイスブック': 'Facebook',
+            'インスタグラム': 'Instagram',
+            'リンクトイン': 'LinkedIn',
+            # 音楽系
+            'ディミニッシュ': 'Diminished',
+            'セブンス': '7th',
+            'コード': 'Chord',
+            'スケール': 'Scale',
+            'メジャー': 'Major',
+            'マイナー': 'Minor'
+        }
+        
+        # カテゴリマッピング（実際のObsidianフォルダ構造に合わせて修正）
         self.category_folders = {
-            'education': '0_Education_国語教育_AI',
-            'tech': '1_Tech_MCP_API', 
-            'business': '2_Business_集客_アイデア',
-            'ideas': '3_Ideas_プロジェクト',
-            'general': '4_General',
-            'kindle': '5_Kindle',
-            'readwise': '6_Readwise'
+            'education': 'Education',
+            'tech': 'Tech', 
+            'business': 'Consulting',  # businessカテゴリはConsultingフォルダに
+            'ideas': 'Others',  # ideasカテゴリはOthersフォルダに
+            'music': 'Music',
+            'media': 'Media',  # mediaカテゴリを追加
+            'general': 'Others',
+            'kindle': 'kindle',  # 小文字のまま
+            'readwise': 'Others'  # readwiseはOthersに統合
         }
         
         # 強化されたカテゴリ判定キーワード
         self.category_keywords = {
+            'music': [
+                # 基本音楽理論
+                'コード', 'スケール', 'ディミニッシュ', 'ハーモニー', '音階', '楽理',
+                # コード種類
+                'マイナーコード', 'メジャーコード', 'セブンスコード', '7thコード', 'sus4', 'add9',
+                # スケール種類
+                'ホールハーフディミニッシュ', 'ハーフホールディミニッシュ', 'クロマチック', 'ペンタトニック',
+                # 音楽用語
+                'ルート', 'サード', 'フィフス', 'セブンス', '着地音', 'コードトーン', '進行',
+                # 楽器・演奏
+                'ピアノ', 'ギター', 'ベース', 'ドラム', '楽器', '演奏', '弾く', '奏でる'
+            ],
             'education': [
                 # 基本教育用語
                 '教育', '指導', '授業', '学習', '国語', '読解', '表現', '生徒', '先生', '教師',
@@ -44,16 +97,23 @@ class IntegratedMemoProcessor:
                 '問題', '答え', '正解', '不正解', '例えば', '仮に', '場面', '状況', '状態',
                 # 評価・指導語
                 'そうですね', '素晴らしい', '残念', '惜しい', 'くん', 'さん', 'ちゃん',
-                # 五感・感覚
-                '聴覚', '視覚', '触覚', '嗅覚', '味覚', '五感', '感覚', '体の部分', 'メロディー'
+                # 五感・感覚（メロディーは音楽カテゴリに移動）
+                '聴覚', '視覚', '触覚', '嗅覚', '味覚', '五感', '感覚', '体の部分'
             ],
             'tech': [
                 'プログラミング', 'API', 'システム', 'アプリ', 'python', 'javascript', 
-                'tech', '技術', '開発', 'コード', 'データ', 'AI', '機械学習'
+                'tech', '技術', '開発', 'コード', 'データ', 'AI', '機械学習', 'ChatGPT', 
+                'チャットGPT', 'プロジェクト機能', 'ボイスモード', 'アドバンスド', 'ツール'
             ],
             'business': [
                 'ビジネス', 'マーケティング', '戦略', '営業', '集客', 'SEO', 'SNS', 
-                '広告', '売上', '収益', '顧客', '市場'
+                '広告', '売上', '収益', '顧客', '市場', 'コンサル', 'コンサルティング', 
+                'クライアント', 'プロジェクト', '会議', 'アドバイス', '提案', '資料'
+            ],
+            'media': [
+                'SNS', 'X', 'Twitter', 'Instagram', 'Facebook', 'YouTube', 'TikTok',
+                'インフルエンサー', 'フォロワー', 'エンゲージメント', 'ポスト', 'アカウント',
+                'メディア', 'コンテンツ', '動画', '配信', 'ライブ'
             ],
             'ideas': [
                 'アイデア', '企画', '提案', '案', 'プロジェクト', '創作', '発想', 
@@ -61,10 +121,21 @@ class IntegratedMemoProcessor:
             ]
         }
     
+    def _convert_katakana_to_english(self, text: str) -> str:
+        """音声入力のカタカナを英語に変換"""
+        converted = text
+        # 長い語句から順に変換（部分一致を防ぐため）
+        for katakana, english in sorted(self.katakana_to_english.items(), key=lambda x: len(x[0]), reverse=True):
+            converted = converted.replace(katakana, english)
+        return converted
+    
     def preview_analysis(self, content: str) -> dict:
         """プレビュー用の完全分析"""
         try:
             print("🔄 統合分析開始...")
+            
+            # 音声入力対応：カタカナを英語に変換
+            content = self._convert_katakana_to_english(content)
             
             # 1. カテゴリ分析（強化版）
             category_result = self._enhanced_category_analysis(content)
@@ -82,13 +153,18 @@ class IntegratedMemoProcessor:
             relations_result = self._find_related_files(content, title_result['title'])
             print(f"🔗 関連分析: {relations_result}")
             
-            # 5. 統合結果構築
+            # 5. 内容要約生成
+            summary_result = self._generate_content_summary(content)
+            print(f"📝 要約生成: 完了")
+            
+            # 6. 統合結果構築
             result = {
                 'success': True,
                 'category': category_result,
                 'title': title_result,
                 'tags': tags_result,
                 'relations': relations_result,
+                'summary': summary_result,
                 'preview_info': self._build_preview_info(category_result, title_result, tags_result, relations_result),
                 'timestamp': datetime.now().isoformat()
             }
@@ -112,23 +188,48 @@ class IntegratedMemoProcessor:
         
         content_lower = content.lower()
         
-        # 教育パターンマッチング（特別強化）
+        # 教育パターンマッチング（厳密化）
         education_patterns = [
-            r'[ぁ-んー]+くん|[ぁ-んー]+さん|[ぁ-んー]+ちゃん',  # 生徒名
+            r'[ぁ-んー]+くん[はがをにで、。]|[ぁ-んー]+さん[はがをにで、。]',  # 生徒名（文脈付き）
             r'わかる？|わかりますか？|理解できた？',  # 教師の確認
-            r'そうですね|素晴らしい|残念|惜しい|正解|不正解',  # 評価
-            r'考えて|思い出す|思い浮かべ|選びなさい|答えなさい',  # 指示
-            r'例えば|仮に|場合|シーン|状況|場面',  # 設定
-            r'ひっかけ|問題|テスト|授業|指導',  # 教育文脈
-            r'聴覚|視覚|五感|体の部分|感覚',  # 感覚教育
+            r'正解です|不正解です|よくできました',  # 明確な評価
+            r'選びなさい|答えなさい|書きなさい',  # 明確な指示
+            r'テスト|試験|授業|宿題|課題',  # 教育文脈
+            r'国語|算数|理科|社会|英語',  # 教科
+        ]
+        
+        # ビジネスパターンマッチング
+        business_patterns = [
+            r'Client|Consulting|Project|Meeting',  # ビジネス英語
+            r'会議|打ち合わせ|商談|提案',  # ビジネス日本語
+            r'資料|レポート|プレゼン',  # ビジネス文書
+            r'戦略|施策|方針|計画',  # ビジネス計画
+        ]
+        
+        # テックパターンマッチング
+        tech_patterns = [
+            r'ChatGPT|AI|API|GitHub|Obsidian',  # テック固有名詞
+            r'機能|ツール|システム|アプリ',  # テック一般用語
+            r'アップロード|ダウンロード|インストール',  # テック動作
         ]
         
         # パターンマッチングスコア
         pattern_scores = defaultdict(int)
         
+        # 教育パターン
         for pattern in education_patterns:
             if re.search(pattern, content):
-                pattern_scores['education'] += 3  # 高スコア
+                pattern_scores['education'] += 2  # スコアを適正化
+        
+        # ビジネスパターン
+        for pattern in business_patterns:
+            if re.search(pattern, content):
+                pattern_scores['business'] += 3  # ビジネスは高スコア
+        
+        # テックパターン
+        for pattern in tech_patterns:
+            if re.search(pattern, content):
+                pattern_scores['tech'] += 3  # テックも高スコア
         
         # キーワードマッチングスコア
         keyword_scores = defaultdict(int)
@@ -145,9 +246,14 @@ class IntegratedMemoProcessor:
             pattern_score = pattern_scores.get(category, 0)
             keyword_score = keyword_scores.get(category, 0)
             
-            # 教育カテゴリは特別扱い
-            if category == 'education':
-                total_scores[category] = pattern_score * 2 + keyword_score
+            # 音楽カテゴリは音楽理論用語で高スコア
+            if category == 'music':
+                music_theory_terms = ['ディミニッシュ', 'スケール', 'コード', 'セブンス', 'ルート', 'サード', 'フィフス']
+                music_bonus = sum(2 for term in music_theory_terms if term in content)
+                total_scores[category] = pattern_score + keyword_score + music_bonus
+            # 教育カテゴリの特別扱いを削除
+            elif category == 'education':
+                total_scores[category] = pattern_score + keyword_score
             else:
                 total_scores[category] = pattern_score + keyword_score
         
@@ -173,6 +279,11 @@ class IntegratedMemoProcessor:
         
         # 複数の手法を試行
         methods = []
+        
+        # 0. 最初の文から主題を抽出（最優先）
+        first_sentence_title = self._extract_first_sentence_theme(content)
+        if first_sentence_title:
+            methods.append({'method': 'first_sentence', 'title': first_sentence_title, 'score': 4.0})
         
         # 1. 主題パターン検出
         theme_title = self._extract_theme_title(content)
@@ -212,6 +323,100 @@ class IntegratedMemoProcessor:
                 'alternatives': [],
                 'confidence': 0.1
             }
+    
+    def _extract_first_sentence_theme(self, content: str) -> str:
+        """最初の文から主題を抽出して言い切り形のタイトル生成（20-50文字）"""
+        # 最初の文を取得
+        sentences = re.split(r'[。．！？\n]', content)
+        if not sentences:
+            return ""
+        
+        first_sentence = sentences[0].strip()
+        if len(first_sentence) < 5:
+            return ""
+        
+        # 冗長な表現を削除
+        clean_sentence = re.sub(r'(ので|ため|のように|というのは|ということで|といった|など|と思います|なのかなと思っているところです|に向き合っていこうと思います)', '', first_sentence)
+        
+        # 重要な固有名詞と概念を抽出
+        entities = re.findall(r'(?:ChatGPT|Project機能|Project|プロジェクト機能|プロジェクト|Consulting|コンサルティング|Client|クライアント|Voice Mode|ボイスモード|アドバンストボイスモード)', clean_sentence)
+        actions = re.findall(r'(?:活用|利用|導入|実装|検討|分析|評価|運用|改善|蓄積|立ち上げ)', clean_sentence)
+        targets = re.findall(r'(?:課題解決|会議履歴|議事録|資料|やりとり|ミーティング|サービス)', clean_sentence)
+        
+        # 言い切り形タイトルの生成
+        if entities and actions and targets:
+            # 3要素揃った場合：「ChatGPTを活用した課題解決手法」
+            main_entity = entities[0].replace('の', '')
+            main_action = actions[0]
+            main_target = targets[0]
+            title = f"{main_entity}を{main_action}した{main_target}手法"
+            
+        elif entities and actions:
+            # 2要素の場合：「ChatGPTプロジェクト機能の活用方法」
+            main_entity = entities[0].replace('の', '')
+            main_action = actions[0]
+            title = f"{main_entity}の{main_action}方法"
+            
+        elif entities:
+            # 固有名詞のみの場合
+            main_entity = entities[0].replace('の', '')
+            if 'コンサル' in clean_sentence or 'クライアント' in clean_sentence:
+                title = f"{main_entity}を活用したコンサルティング戦略"
+            elif 'プロジェクト' in clean_sentence or 'Project' in clean_sentence:
+                title = f"{main_entity}プロジェクト管理の実践法"
+            else:
+                title = f"{main_entity}の効果的活用法"
+                
+        else:
+            # フォールバック：重要語句から構成
+            important_phrases = re.findall(r'[ぁ-んァ-ヶー一-龯]{4,12}', clean_sentence)
+            if len(important_phrases) >= 2:
+                title = f"{important_phrases[0]}と{important_phrases[1]}の連携手法"
+            elif important_phrases:
+                title = f"{important_phrases[0]}の実践的アプローチ"
+            else:
+                title = "新しい業務改善手法"
+        
+        # 文字数調整（20-50文字）
+        if len(title) < 20:
+            # 短すぎる場合は補完
+            if 'ChatGPT' in title:
+                title = title.replace('の', '機能の').replace('を', 'ツールを')
+            if len(title) < 20:
+                title += "による業務効率化"
+                
+        elif len(title) > 50:
+            # 長すぎる場合は短縮
+            title = title[:47] + "..."
+        
+        return self._clean_title_text(title)
+    
+    def _create_natural_method_summary(self, methods: list) -> str:
+        """複数の手段を自然な日本語に統合"""
+        if not methods:
+            return ""
+        
+        # カテゴリ別に分類
+        project_methods = [m for m in methods if 'プロジェクト' in m or 'Project' in m]
+        data_methods = [m for m in methods if '資料' in m or '議事録' in m or '蓄積' in m]
+        comm_methods = [m for m in methods if 'チャット' in m or 'ボイス' in m]
+        
+        summary_parts = []
+        
+        if project_methods:
+            summary_parts.append("プロジェクト管理")
+        
+        if data_methods:
+            summary_parts.append("情報の一元管理")
+        
+        if comm_methods:
+            summary_parts.append("多様なコミュニケーション")
+        
+        # フォールバック
+        if not summary_parts:
+            summary_parts = methods[:2]
+        
+        return "・".join(summary_parts[:2])
     
     def _extract_theme_title(self, content: str) -> str:
         """主題パターンからタイトル抽出"""
@@ -531,6 +736,26 @@ class IntegratedMemoProcessor:
         """Layer 1: 最優先固有名詞・専門用語抽出"""
         entities = set()
         
+        # 全カテゴリ共通の重要固有名詞を先にチェック
+        universal_entities = {
+            'ChatGPT': ['ChatGPT', 'chatgpt', 'Chat GPT'],
+            'GitHub': ['GitHub', 'github', 'Github'],
+            'Obsidian': ['Obsidian', 'obsidian'],
+            'AI': ['AI', 'A.I.'],
+            'API': ['API'],
+            'Claude': ['Claude', 'claude'],
+            'Python': ['Python', 'python'],
+            'JavaScript': ['JavaScript', 'javascript', 'JS'],
+            'Project': ['Project', 'プロジェクト'],
+            'Client': ['Client', 'クライアント'],
+            'Consulting': ['Consulting', 'コンサル', 'コンサルティング']
+        }
+        
+        for entity, patterns in universal_entities.items():
+            if any(pattern in content for pattern in patterns):
+                entities.add(entity)
+        
+        # カテゴリ別の追加抽出
         if category == 'education':
             # 学校名（最優先）
             school_patterns = {
@@ -676,13 +901,21 @@ class IntegratedMemoProcessor:
         """Layer 6: 頻出語タグ抽出（2回以上出現）"""
         frequent_terms = set()
         
-        # 日本語の意味のある語（3文字以上）
+        # 日本語の意味のある語（3文字以上）を抽出、ただし音楽用語は適切に処理
         japanese_words = re.findall(r'[ぁ-んァ-ヶー一-龯]{3,8}', content)
+        
+        # 音楽理論用語の特別処理
+        music_terms = ['ディミニッシュスケール', 'ホールハーフディミニッシュ', 'ハーフホールディミニッシュ']
+        for term in music_terms:
+            if term in content:
+                frequent_terms.add(term)
+        
         word_counts = Counter(japanese_words)
         
         for word, count in word_counts.items():
             if (count >= 2 and len(word) >= 3 and 
-                not re.match(r'^[あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん]+$', word)):
+                not re.match(r'^[あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん]+$', word) and
+                word not in ['ディミニ', 'ッシュス', 'ールハー']):  # 不完全な切断語は除外
                 frequent_terms.add(word)
         
         return frequent_terms
@@ -748,6 +981,68 @@ class IntegratedMemoProcessor:
                     tags.add(term)
         
         return tags
+    
+    def _extract_important_terms(self, content: str) -> list:
+        """重要な用語を抽出（カテゴリ不問）"""
+        important_terms = []
+        
+        # 全カテゴリ共通の重要固有名詞
+        universal_entities = {
+            'ChatGPT': ['ChatGPT', 'chatgpt', 'Chat GPT', 'チャットGPT'],
+            'GitHub': ['GitHub', 'github', 'Github'],
+            'Obsidian': ['Obsidian', 'obsidian', 'オブシディアン'],
+            'AI': ['AI', 'A.I.', 'エーアイ'],
+            'API': ['API', 'エーピーアイ'],
+            'Claude': ['Claude', 'claude'],
+            'Python': ['Python', 'python', 'パイソン'],
+            'JavaScript': ['JavaScript', 'javascript', 'JS', 'ジャバスクリプト'],
+            'Project': ['Project', 'プロジェクト'],
+            'Client': ['Client', 'クライアント'],
+            'Consulting': ['Consulting', 'コンサル', 'コンサルティング']
+        }
+        
+        # 固有名詞のマッチング
+        for entity, patterns in universal_entities.items():
+            if any(pattern in content for pattern in patterns):
+                important_terms.append(entity)
+        
+        # 技術関連の重要用語
+        tech_terms = ['システム', 'アプリ', 'プログラミング', '開発', 'データ', '機械学習', 'ツール']
+        for term in tech_terms:
+            if term in content:
+                important_terms.append(term)
+        
+        # 教育関連の重要用語
+        education_terms = ['教育', '学習', '指導', '授業', '国語', '分析', '対策', '中学受験']
+        for term in education_terms:
+            if term in content:
+                important_terms.append(term)
+        
+        # ビジネス関連の重要用語
+        business_terms = ['ビジネス', 'マーケティング', '戦略', '営業', '集客', 'SEO', 'SNS']
+        for term in business_terms:
+            if term in content:
+                important_terms.append(term)
+        
+        # メディア関連の重要用語
+        media_terms = ['X', 'Twitter', 'Instagram', 'フォロワー', 'エンゲージメント', 'ポスト', 'アカウント']
+        for term in media_terms:
+            if term in content:
+                important_terms.append(term)
+        
+        # 頻出する日本語の重要語を追加
+        japanese_words = re.findall(r'[ぁ-んァ-ヶー一-龯]{3,8}', content)
+        word_counts = Counter(japanese_words)
+        
+        # 2回以上出現し、一般的でない語を追加
+        for word, count in word_counts.items():
+            if (count >= 2 and len(word) >= 3 and 
+                not self._is_common_word(word) and
+                word not in important_terms):
+                important_terms.append(word)
+        
+        # 重複を除去して返す
+        return list(dict.fromkeys(important_terms))
 
     def _find_related_files(self, content: str, title: str) -> dict:
         """file-organizer式強化関連ファイル検索"""
@@ -759,11 +1054,21 @@ class IntegratedMemoProcessor:
             # 既存のmarkdownファイルを検索
             md_files = list(vault_path.rglob('*.md'))
             
+            # デバッグ用：ChatGPT関連ファイルの検出
+            chatgpt_files_found = 0
+            files_processed = 0
+            
             for md_file in md_files:
                 try:
+                    files_processed += 1
+                    
                     # ファイル内容を読み込み
                     with open(md_file, 'r', encoding='utf-8') as f:
                         file_content = f.read()
+                    
+                    # ChatGPT関連ファイルの検出
+                    if any(keyword in file_content for keyword in ['ChatGPT', 'チャットGPT', 'chatgpt']):
+                        chatgpt_files_found += 1
                     
                     # タイトルを抽出
                     file_title = md_file.stem
@@ -775,6 +1080,11 @@ class IntegratedMemoProcessor:
                     
                     # カテゴリ別の厳格な閾値設定（関連度向上）
                     threshold = self._get_relation_threshold(title, file_title)
+                    
+                    # デバッグ情報（開発時のみ有効）
+                    # if any(keyword in file_content for keyword in ['ChatGPT', 'チャットGPT', 'chatgpt']):
+                    #     print(f"🔍 ChatGPT関連ファイル: {file_title}")
+                    #     print(f"   スコア: {relation_score:.3f}, 閾値: {threshold:.3f}")
                     
                     if relation_score > threshold:
                         # 星評価を計算
@@ -790,7 +1100,12 @@ class IntegratedMemoProcessor:
                         })
                 
                 except Exception as e:
+                    print(f"⚠️ ファイル読み込みエラー ({md_file}): {e}")
                     continue
+            
+            # 開発デバッグ情報（本番では無効）
+            # print(f"📊 ChatGPT関連ファイル数: {chatgpt_files_found}/{files_processed}")
+            # print(f"📊 関連ファイル検出数: {len(relations)}")
             
             # スコア順でソート
             relations.sort(key=lambda x: x['score'], reverse=True)
@@ -809,8 +1124,25 @@ class IntegratedMemoProcessor:
             }
     
     def _calculate_hierarchical_relation_score(self, content1: str, content2: str, title1: str, title2: str) -> float:
-        """file-organizer式階層的関連度スコア計算"""
+        """file-organizer式階層的関連度スコア計算（強化版）"""
         max_score = 0.0
+        
+        # 0. 重要キーワード直接マッチング（最優先）
+        important_keywords = [
+            'ChatGPT', 'チャットGPT', 'chatgpt', 'API', 'GitHub', 'Obsidian', 'AI', 'Claude',
+            'Project', 'プロジェクト', 'Consulting', 'コンサル', 'Client', 'クライアント',
+            'Python', 'JavaScript', 'MCP', 'Zapier', 'Notion'
+        ]
+        
+        keyword_matches = 0
+        for keyword in important_keywords:
+            if keyword in content1 and keyword in content2:
+                keyword_matches += 1
+        
+        # 重要キーワードマッチがある場合は高スコア保証
+        if keyword_matches > 0:
+            keyword_score = min(0.3 + keyword_matches * 0.2, 0.9)
+            max_score = max(max_score, keyword_score)
         
         # 1. タイトル類似度（最重要）
         title_similarity = self._calculate_title_similarity(title1, title2)
@@ -824,19 +1156,9 @@ class IntegratedMemoProcessor:
         if tag_similarity > 0.2:
             max_score = max(max_score, tag_similarity * 1.2)
         
-        # 3. コンテンツ類似度
+        # 3. コンテンツ類似度（改良済み）
         jaccard_similarity = self._calculate_content_jaccard_similarity(content1, content2)
-        
-        # カテゴリ別の厳格な閾値設定（関連度向上）
-        if self._is_sns_analysis_file(title1) and self._is_sns_analysis_file(title2):
-            if jaccard_similarity > 0.15:  # SNS分析同士：より厳格
-                max_score = max(max_score, jaccard_similarity)
-        elif self._is_tech_file(title1) and self._is_tech_file(title2):
-            if jaccard_similarity > 0.12:  # Tech系同士：より厳格  
-                max_score = max(max_score, jaccard_similarity)
-        else:
-            if jaccard_similarity > 0.18:  # 一般ファイル：より厳格
-                max_score = max(max_score, jaccard_similarity)
+        max_score = max(max_score, jaccard_similarity)
         
         return max_score
     
@@ -872,16 +1194,46 @@ class IntegratedMemoProcessor:
         return intersection / union if union > 0 else 0.0
     
     def _calculate_content_jaccard_similarity(self, content1: str, content2: str) -> float:
-        """コンテンツのJaccard類似度計算"""
-        words1 = set(re.findall(r'[ぁ-んァ-ヶー一-龯]{3,}', content1.lower()))
-        words2 = set(re.findall(r'[ぁ-んァ-ヶー一-龯]{3,}', content2.lower()))
+        """コンテンツのJaccard類似度計算（英語対応強化）"""
+        # 日本語の単語（3文字以上）
+        jp_words1 = set(re.findall(r'[ぁ-んァ-ヶー一-龯]{3,}', content1.lower()))
+        jp_words2 = set(re.findall(r'[ぁ-んァ-ヶー一-龯]{3,}', content2.lower()))
+        
+        # 英語の単語（2文字以上）+ 重要固有名詞
+        en_words1 = set(re.findall(r'[A-Za-z]{2,}', content1))
+        en_words2 = set(re.findall(r'[A-Za-z]{2,}', content2))
+        
+        # 重要キーワードの直接マッチング（大幅加点）
+        important_keywords = {
+            'ChatGPT', 'chatgpt', 'チャットGPT', 'API', 'GitHub', 'Obsidian', 'AI', 'Claude',
+            'Project', 'プロジェクト', 'Consulting', 'コンサル', 'Client', 'クライアント',
+            'Python', 'JavaScript', 'Tech', 'ビジネス', 'アイデア'
+        }
+        
+        keyword_matches = 0
+        for keyword in important_keywords:
+            if keyword in content1 and keyword in content2:
+                keyword_matches += 1
         
         # 一般的すぎる語を除外
-        common_words = {'について', 'に関して', 'ができる', 'である', 'ている', 'ました', 'します', 'された'}
-        words1 = words1 - common_words
-        words2 = words2 - common_words
+        common_words = {'について', 'に関して', 'ができる', 'である', 'ている', 'ました', 'します', 'された', 'the', 'and', 'of', 'to', 'in', 'is', 'it'}
+        jp_words1 = jp_words1 - common_words
+        jp_words2 = jp_words2 - common_words
+        en_words1 = en_words1 - common_words
+        en_words2 = en_words2 - common_words
         
-        return self._calculate_jaccard_similarity(words1, words2)
+        # 全単語セットの組み合わせ
+        all_words1 = jp_words1 | en_words1
+        all_words2 = jp_words2 | en_words2
+        
+        jaccard_sim = self._calculate_jaccard_similarity(all_words1, all_words2)
+        
+        # 重要キーワードマッチに大幅ボーナス
+        if keyword_matches > 0:
+            bonus = min(keyword_matches * 0.3, 0.8)  # 最大0.8のボーナス
+            jaccard_sim = min(1.0, jaccard_sim + bonus)
+        
+        return jaccard_sim
     
     def _is_sns_analysis_file(self, title: str) -> bool:
         """SNS分析ファイル判定"""
@@ -890,17 +1242,17 @@ class IntegratedMemoProcessor:
     
     def _is_tech_file(self, title: str) -> bool:
         """技術ファイル判定"""
-        tech_keywords = ['API', 'プログラミング', 'システム', 'GitHub', 'Python', 'AI', 'Claude', 'コード']
+        tech_keywords = ['API', 'プログラミング', 'システム', 'GitHub', 'Python', 'AI', 'Claude', 'コード', 'ChatGPT', 'チャットGPT', 'MCP', 'Zapier', 'Obsidian', 'Tech', '技術', '開発']
         return any(keyword in title for keyword in tech_keywords)
     
     def _get_relation_threshold(self, title1: str, title2: str) -> float:
         """カテゴリ別関連閾値取得"""
         if self._is_sns_analysis_file(title1) and self._is_sns_analysis_file(title2):
-            return 0.15  # SNS分析同士：厳格
+            return 0.08  # SNS分析同士：緩和
         elif self._is_tech_file(title1) and self._is_tech_file(title2):
-            return 0.12  # Tech系同士：厳格
+            return 0.06  # Tech系同士：緩和
         else:
-            return 0.18  # 一般：より厳格
+            return 0.05  # 一般：大幅緩和（実用的なレベルに）
     
     def _calculate_star_rating(self, score: float) -> str:
         """スコアから星評価を計算"""
@@ -932,11 +1284,16 @@ class IntegratedMemoProcessor:
                            tags_result: dict, relations_result: dict) -> dict:
         """プレビュー表示用情報構築"""
         
+        # 実際の保存先フォルダを取得
+        actual_folder = self.category_folders.get(category_result['name'], 'Others')
+        
         return {
             'category_display': f"{category_result['name']} (信頼度: {category_result['confidence']:.1%})",
             'title_display': title_result['title'],
             'tags_display': ' '.join(tags_result['tags'][:5]),  # 最初の5個
             'relations_display': f"{relations_result['count']}件の関連ファイル",
+            'folder_path': actual_folder,  # 実際の保存先フォルダを追加
+            'save_path_display': f"{actual_folder}/{title_result['title']} {datetime.now().strftime('%Y-%m-%d')}.md",
             'full_analysis': {
                 'category_scores': category_result.get('scores', {}),
                 'title_alternatives': title_result.get('alternatives', []),
@@ -960,10 +1317,14 @@ class IntegratedMemoProcessor:
         text = re.sub(r'[」』]$', '', text)
         text = re.sub(r'」と「', 'と', text)  # 「A」と「B」→AとB
         text = re.sub(r'』と『', 'と', text)  # 『A』と『B』→AとB
-        # 適切な長さに調整（30文字まで）
+        # 適切な長さに調整（35文字まで拡張）
         cleaned = text.strip()
-        if len(cleaned) > 30:
-            cleaned = cleaned[:27] + "..."
+        if len(cleaned) > 35:
+            # 単語の途中で切らないように調整
+            cut_point = 32
+            while cut_point > 20 and cleaned[cut_point] not in ['の', 'を', 'に', 'と', 'で', ' ', '、']:
+                cut_point -= 1
+            cleaned = cleaned[:cut_point] + "..."
         return cleaned
     
     def _is_common_word(self, word: str) -> bool:
@@ -1046,6 +1407,186 @@ class IntegratedMemoProcessor:
             if re.search(pattern, content):
                 tags.append(tag)
         return tags
+    
+    def _generate_content_summary(self, content: str) -> dict:
+        """メモ内容の要約と箇条書きを生成（ultrathinking版）"""
+        
+        # 文全体を理解するための前処理
+        clean_content = re.sub(r'(ので|のように|ということで|なのかなと思っているところです)', '', content)
+        sentences = re.split(r'[。．！？\n]', content)
+        sentences = [s.strip() for s in sentences if s.strip() and len(s.strip()) > 10]
+        
+        # 重要な固有名詞と概念の抽出
+        important_terms = self._extract_important_terms(content)
+        
+        # === 要約生成（論理的構造で整理）===
+        
+        # 1. 主要目的の特定
+        purpose = ""
+        purpose_patterns = [
+            r'(ChatGPT[のプロジェクト機能]*|Project[機能]*|プロジェクト[機能]*)[をに](.{5,20})(したい|する|活用|利用)',
+            r'(.{10,25})[をに](.{5,15})(に向き合|活用|利用)(していこう|したい)'
+        ]
+        
+        for pattern in purpose_patterns:
+            match = re.search(pattern, content)
+            if match:
+                groups = match.groups()
+                if len(groups) >= 3:
+                    tool = groups[0]
+                    action = groups[2] if len(groups) > 2 else groups[1]
+                    purpose = f"{tool}を{action}"
+                    break
+        
+        if not purpose:
+            purpose = "ChatGPTプロジェクト機能の活用"
+        
+        # 2. 具体的手段の抽出（文脈を保持して自然な表現に）
+        methods = []
+        
+        # クライアント関連の手段
+        client_patterns = [
+            r'(クライアント|Client)ごとに(.{5,30}?)(?:を立ち上げ|プロジェクト)',
+            r'(クライアント|Client)(?:ごと|別)に(.{5,25}?)(?:する|管理|運用)'
+        ]
+        
+        for pattern in client_patterns:
+            match = re.search(pattern, content)
+            if match:
+                action = match.group(2).strip()
+                # 不完全な文字列をクリーンアップ
+                action = re.sub(r'[、。].*$', '', action)  # 句読点以降を削除
+                if len(action) > 3 and 'を' not in action[-2:]:  # 助詞で終わらないように
+                    methods.append(f"クライアント別{action}管理")
+                break
+        
+        # 蓄積・管理関連の手段（より具体的に）
+        if '資料' in content and '蓄積' in content:
+            methods.append("資料の一元管理")
+        if '議事録' in content and '蓄積' in content:
+            methods.append("議事録の蓄積")
+        
+        # コミュニケーション手段
+        if 'チャット' in content and ('やりとり' in content or '課題' in content):
+            methods.append("チャットでのやりとり")
+        
+        # ボイスモード関連
+        if 'ボイスモード' in content or 'Voice Mode' in content:
+            methods.append("ボイスモードでの相談")
+        
+        # 3. 期待効果の抽出（自然な表現で）
+        effects = []
+        
+        # 課題解決関連
+        if '課題' in content and ('解決' in content or '抽出' in content):
+            effects.append("課題解決の実現")
+        
+        # 議題検討関連
+        if 'ミーティング' in content and '議題' in content:
+            effects.append("効率的な会議運営")
+        
+        # その他の効果
+        if '方法' in content and '見出す' in content:
+            effects.append("新手法の発見")
+        
+        # 要約の組み立て（自然な日本語になるよう調整）
+        summary_parts = []
+        
+        # 主目的
+        summary_parts.append(purpose)
+        
+        # 手段（最大2個、自然に繋がるように）
+        if methods:
+            if len(methods) == 1:
+                summary_parts.append(methods[0])
+            else:
+                # 複数の手段を自然に統合
+                method_summary = self._create_natural_method_summary(methods[:3])
+                summary_parts.append(method_summary)
+        
+        # 効果
+        if effects:
+            summary_parts.append(effects[0])
+        
+        # 文字数制限と自然性チェック
+        summary = " / ".join(summary_parts)
+        
+        # 不完全な文字列をクリーンアップ
+        summary = self._clean_summary_text(summary)
+            
+        # === 箇条書きポイントの生成（論理的構造版）===
+        bullet_points = []
+        
+        # 1. プロジェクト管理手法
+        if 'プロジェクト' in content or 'Project' in content:
+            if 'クライアント' in content or 'Client' in content:
+                bullet_points.append("クライアント別プロジェクト管理")
+            else:
+                bullet_points.append("プロジェクト機能の活用")
+        
+        # 2. 資料・情報管理
+        storage_items = []
+        if '資料' in content:
+            storage_items.append("資料")
+        if '議事録' in content:
+            storage_items.append("議事録")
+        if storage_items:
+            bullet_points.append(f"{'/'.join(storage_items)}の一元管理")
+        
+        # 3. コミュニケーション手法
+        comm_methods = []
+        if 'チャット' in content or 'やりとり' in content:
+            comm_methods.append("チャットでの課題抽出")
+        if 'ボイスモード' in content or 'Voice Mode' in content:
+            comm_methods.append("ボイスモードでの相談")
+        if comm_methods:
+            bullet_points.extend(comm_methods)
+        
+        # 4. 成果・効果
+        if '課題' in content and ('解決' in content or '抽出' in content):
+            bullet_points.append("課題解決方法の検討")
+        if 'ミーティング' in content and '議題' in content:
+            bullet_points.append("ミーティング議題の準備")
+        
+        # 重複を削除して最大5個に制限
+        bullet_points = list(dict.fromkeys(bullet_points))[:5]
+        
+        return {
+            'summary': summary,
+            'bullet_points': bullet_points,
+            'key_terms': important_terms[:5]
+        }
+    
+    def _clean_summary_text(self, text: str) -> str:
+        """要約テキストのクリーニング（不完全文字列の修正含む）"""
+        # 不要な接続詞や冗長な表現を削除
+        text = re.sub(r'^(また|そして|それから|つまり|要するに)', '', text)
+        text = re.sub(r'(という|とか|など|みたい|ような)$', '', text)
+        text = re.sub(r'。$', '', text)
+        
+        # 不完全な文字列を修正
+        # "提供した資料をP" のような途切れた部分を修正
+        text = re.sub(r'[をに][A-Za-z](?:[、/]|$)', 'の管理', text)  # "をP" → "の管理"
+        text = re.sub(r'[をに][、]', 'と', text)  # "を、" → "と"
+        
+        # 連続する句読点を整理
+        text = re.sub(r'[、]+', '、', text)
+        text = re.sub(r'[。]+', '。', text)
+        
+        # 末尾の不完全な助詞を削除
+        text = re.sub(r'[をにが、]$', '', text)
+        
+        return text.strip()
+    
+    def _clean_bullet_point(self, text: str) -> str:
+        """箇条書きテキストのクリーニング"""
+        # 括弧や引用符を削除
+        text = re.sub(r'[「」『』（）()]', '', text)
+        # 冗長な助詞を削除
+        text = re.sub(r'(とか|など|みたいな|ような)$', '', text)
+        # 連続する助詞を整理
+        text = re.sub(r'(を|に|で|と|の){2,}', r'\1', text)
+        return text.strip()
     
     def _extract_entity_tags(self, content: str) -> list:
         """固有名詞タグ抽出"""
@@ -1130,8 +1671,8 @@ class IntegratedMemoProcessor:
     def _save_memo_file(self, title: str, content: str, category: str, tags: list, relations: list) -> Path:
         """メモファイルを保存"""
         
-        # ディレクトリ設定
-        folder_name = self.category_folders.get(category, '4_General')
+        # ディレクトリ設定（実際のObsidianフォルダ構造に合わせて修正）
+        folder_name = self.category_folders.get(category, 'Others')
         save_dir = Path(self.obsidian_path) / self.inbox_path / folder_name
         save_dir.mkdir(parents=True, exist_ok=True)
         
@@ -1326,6 +1867,10 @@ def main():
         print(f"TITLE:{result['title']['title']}")
         print(f"CATEGORY:{result['category']['name']}")
         
+        # 実際の保存先フォルダを追加
+        actual_folder = processor.category_folders.get(result['category']['name'], 'Others')
+        print(f"FOLDER:{actual_folder}")
+        
         # タグを単純な形式で出力
         tags_list = result['tags']['tags']
         tags_str = ",".join(tags_list) if tags_list else "なし"
@@ -1339,6 +1884,18 @@ def main():
         else:
             relations_str = "なし"
         print(f"RELATIONS:{relations_str}")
+        
+        # 要約情報を出力
+        summary_info = result.get('summary', {})
+        summary_text = summary_info.get('summary', '')
+        bullet_points = summary_info.get('bullet_points', [])
+        
+        print(f"SUMMARY:{summary_text}")
+        if bullet_points:
+            print(f"BULLET_POINTS:{' | '.join(bullet_points)}")
+        else:
+            print("BULLET_POINTS:なし")
+            
         print("RESULT_END")
         
         # デバッグ用にJSON形式も出力
