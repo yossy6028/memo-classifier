@@ -1,6 +1,7 @@
 # Phase 4拡張: 高度リレーション分析
 # 基本依存関係
 anthropic==0.8.1
+google-generativeai
 sentence-transformers==2.2.2
 pyyaml==6.0.1
 colorama==0.4.6
