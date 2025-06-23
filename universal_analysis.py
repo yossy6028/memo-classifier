@@ -186,11 +186,21 @@ def main():
     
     if len(sys.argv) < 3:
         print("ERROR: 引数が不足しています")
-        print("使用方法: python universal_analysis.py [preview|save] [メモ内容]")
+        print("使用方法: python universal_analysis.py [preview|save] [メモ内容] [API_KEY(optional)]")
         sys.exit(1)
     
     mode = sys.argv[1]
     content = sys.argv[2]
+    
+    # 抜本的解決：API keyを直接インポート
+    try:
+        from api_config import get_api_key
+        api_key = get_api_key()
+        os.environ['GEMINI_API_KEY'] = api_key
+        logger.info(f"API Key loaded from api_config.py")
+    except ImportError as e:
+        logger.error(f"Failed to import API config: {e}")
+        raise Exception("API設定ファイルが見つかりません")
     
     if not content.strip():
         print("ERROR: メモ内容が空です")

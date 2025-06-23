@@ -32,6 +32,7 @@ safe_debug.log
 config_local.yaml
 secrets.yaml
 api_keys.txt
+api_config.py
 
 # IDE
 .vscode/

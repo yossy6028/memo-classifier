@@ -29,62 +29,13 @@ class UniversalAnalyzer:
     def analyze(self, content: str, categories: List[str]) -> Dict:
         """コンテンツを普遍的に分析してタイトル・カテゴリ・タグを生成"""
         
-        analysis_id = datetime.now().strftime("%Y%m%d%H%M%S%f")
-        
-        prompt = f"""
-あなたは文書分析の専門家です。以下のメモを分析し、普遍的な手法でタイトル・カテゴリ・タグを生成してください。
-
-分析ID: {analysis_id}
-現在時刻: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-
-【重要な分析原則】
-1. 特定のキーワードに依存せず、文書の本質を理解する
-2. 文書の種類（戦略書、手順書、分析レポート等）を判定する
-3. 主要な動作・目的（分析、提案、説明、計画等）を特定する
-4. 対象領域（教育、ビジネス、技術等）を抽出する
-
-【タイトル生成の普遍的ルール】
-- 文書種別 + 対象 + 動作の組み合わせで生成
-- 例：「教育システム分析」「マーケティング戦略提案」「開発手順説明」
-- 体言止めで簡潔に（10-20文字）
-- 内容の本質を一目で理解できるように
-
-【カテゴリ判定の普遍的ルール】
-- ビジネス・経営・戦略・コンサル要素 → consulting
-- 技術・開発・システム・プログラミング → tech  
-- 純粋な教育手法・学習方法（ビジネス要素なし） → education
-- 書籍・読書・出版 → kindle
-- 音楽・演奏・楽器 → music
-- SNS・YouTube・note等外部発信全般、コンテンツ制作、映像、デザイン → media
-- その他 → others
-
-重要：SNS(X/Twitter/Instagram/TikTok等)、YouTube、note、ブログ等の外部発信プラットフォーム関連は必ずmediaに分類
-
-メモ内容:
-{content}
-
-カテゴリ選択肢: {', '.join(categories)}
-
-以下の形式で出力してください（JSON形式）：
-{{
-    "document_type": "文書の種類（戦略書/手順書/分析レポート/会議記録/提案書など）",
-    "main_action": "主要な動作（分析/提案/説明/計画/検討など）",
-    "target_domain": "対象領域（教育/マーケティング/技術/経営など）",
-    "title": "普遍的手法で生成した体言止めタイトル",
-    "category": "最も適切なカテゴリ",
-    "tags": ["関連タグ1", "関連タグ2", "関連タグ3"],
-    "confidence": "タイトル生成の信頼度（0.0-1.0）"
-}}
-"""
+        # GeminiClient.analyze_memo()を使用するため、独自プロンプトは不要
         
         try:
-            response = self.gemini.model.generate_content(prompt).text
+            # GeminiClient.analyze_memo()を使用（修正されたプロンプト適用）
+            result = self.gemini.analyze_memo(content, categories)
             
-            # JSON部分を抽出
-            json_match = re.search(r'\{[^{}]*?\}', response, re.DOTALL)
-            if json_match:
-                result = json.loads(json_match.group())
-                
+            if result:
                 # 結果の検証と補完
                 result = self._validate_and_enhance(result, content)
                 

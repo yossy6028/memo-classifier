@@ -41,8 +41,6 @@ on run
             set scriptFile to scriptPath & "/universal_analysis.py"
             set pythonCmd to pythonPath & " " & quoted form of scriptFile & " preview " & quoted form of memoContent
             
-            -- デバッグログ：実行コマンド記録
-            do shell script "echo " & quoted form of ("EXECUTING: " & pythonCmd) & " >> " & quoted form of (scriptPath & "/safe_debug.log")
             
             -- バックグラウンド処理中のダイアログ表示
             try
