@@ -22,6 +22,16 @@ embeddings_cache.pkl
 # Logs
 logs/
 *.log
+debug.log
+safe_debug.log
+
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+config_local.yaml
+secrets.yaml
+api_keys.txt
 
 # IDE
 .vscode/

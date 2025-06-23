@@ -1,5 +1,6 @@
 gemini:
-  api_key: AIzaSyA-4jEpv2dACzU-zvd68yQeCMTEvNKzygY
+  # APIキーは環境変数 GEMINI_API_KEY で設定してください
+  # api_key: "環境変数から取得"
 
 # Cursor Memo Classifier - Phase 4拡張設定
 # 高度リレーション分析システム

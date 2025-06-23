@@ -16,12 +16,25 @@ class GeminiClient:
         """
         try:
             logging.info("GeminiClient: Initializing...")
-            with open(config_path, 'r') as f:
-                config = yaml.safe_load(f)
-            api_key = config.get('gemini', {}).get('api_key')
-            if not api_key or api_key == "YOUR_GEMINI_API_KEY":
-                logging.error("GeminiClient: API key is missing or not set in config.yaml.")
-                raise ValueError("config.yamlにGeminiのAPIキーが見つからないか、設定されていません。")
+            # オフラインモードの初期化
+            self.offline_mode = False
+            
+            # APIキーを環境変数から取得
+            api_key = os.getenv('GEMINI_API_KEY')
+            if not api_key:
+                # 設定ファイルからのフォールバック（非推奨）
+                try:
+                    with open(config_path, 'r') as f:
+                        config = yaml.safe_load(f)
+                    api_key = config.get('gemini', {}).get('api_key')
+                except:
+                    pass
+                
+                if not api_key or api_key == "YOUR_GEMINI_API_KEY":
+                    logging.warning("GeminiClient: API key not found. Running in offline mode.")
+                    self.model = None
+                    self.offline_mode = True
+                    return
             
             logging.info("GeminiClient: API Key found. Configuring genai...")
             genai.configure(api_key=api_key)
@@ -56,6 +69,10 @@ class GeminiClient:
         """
         メモの内容を分析し、タイトル、カテゴリ、タグを生成
         """
+        # オフラインモードの場合はフォールバック分析
+        if self.offline_mode or self.model is None:
+            return self._offline_analysis(content, categories)
+        
         category_list = ", ".join(categories)
 
         prompt = f"""
@@ -145,4 +162,44 @@ class GeminiClient:
             return result
         except Exception as e:
             logging.error(f"Gemini APIの呼び出しまたはJSONパース中にエラーが発生: {e}", exc_info=True)
-            return None 
+            return self._offline_analysis(content, categories)
+    
+    def _offline_analysis(self, content: str, categories: list) -> dict:
+        """
+        APIキーが設定されていない場合のフォールバック分析
+        """
+        logging.info("GeminiClient: Running offline analysis...")
+        
+        # 簡易的なキーワード分析
+        content_lower = content.lower()
+        
+        # カテゴリ判定（簡易版）
+        category = "others"
+        if any(word in content_lower for word in ['コンサル', '戦略', '営業', '打ち合わせ']):
+            category = "consulting"
+        elif any(word in content_lower for word in ['プログラミング', 'システム', 'api', 'ai']):
+            category = "tech"
+        elif any(word in content_lower for word in ['教育', '学習', '指導']):
+            category = "education"
+        elif any(word in content_lower for word in ['音楽', '楽器', '演奏']):
+            category = "music"
+        elif any(word in content_lower for word in ['sns', 'youtube', 'ブログ', 'メディア']):
+            category = "media"
+        elif any(word in content_lower for word in ['本', '書籍', 'kindle']):
+            category = "kindle"
+        
+        # タイトル生成（簡易版）
+        lines = content.strip().split('\n')
+        first_line = lines[0] if lines else content
+        title = first_line[:20] + "..." if len(first_line) > 20 else first_line
+        
+        # タグ生成（簡易版）
+        words = content.split()
+        tags = [word for word in words if len(word) > 2 and word.isalpha()][:3]
+        
+        return {
+            "title": title or "無題メモ",
+            "category": category,
+            "tags": tags or ["メモ"],
+            "related_files_keywords": tags[:2] or ["メモ"]
+        } 
